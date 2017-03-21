@@ -26,11 +26,11 @@
 
                     <repeat-tab array="array" tabNameProp="navTitle" >
             
-                        {{ testmodelprop }} {{ tabName }}
+                        {{ testmodelprop }} 
 
                     </repeat-tab>
 
-                    <!--<compile-tab model="testmodel1" tabNameProp="navTitle"> {{ testmodelprop }}  </compile-tab>-->
+                    <compile-tab model="testmodelcustom" tabNameProp="navTitle"> {{ testmodelprop }} </compile-tab>
 
                 </tabs>
 
@@ -47,8 +47,7 @@
 
         app.controller("mainCtrl", function ($scope) {
 
-            $scope.testmodel1 = { testmodelprop: "testmodel1prop", navTitle: "nav1" };
-            $scope.testmodel1 = { testmodelprop: "testmodel2prop", navTitle: "nav2" };
+            $scope.testmodelcustom = { testmodelprop: "testmodelcustom", navTitle: "navcustom" };
 
             $scope.array = [{ testmodelprop: "testmodel1prop", navTitle: "nav1" }, { testmodelprop: "testmodel2prop", navTitle: "nav2" }];
         });
@@ -67,8 +66,6 @@
                         $rootScope[scope.id] = {};
                         $rootScope[scope.id].tabNames = [];
                         
-                        console.log("tabs component");
-
                         var tabs = [];
 
                         $innerContent = $(clonedTranscludedContent[1]);
@@ -110,16 +107,20 @@
 
                             var tabName = $(compileTabs[j]).attr('model');
 
+                            $(compileTabs[j]).wrapInner('<div ng-show="$root.' + scope.id + '.Active == tabName" />');
+
                             $rootScope[scope.id].tabNames.push(tabName);
 
-                            var newScope = scope.$new();
+                            var customScope = scope.$new();
+
+                            customScope.tabName = tabName;
             
                             var individualModel = scope.$parent[$(compileTabs[j]).attr('model')];
 
                             var jqueryTab = $(compileTabs[j]);
                             var stringTab = jqueryTab.prop('outerHTML');
 
-                            newScope = angular.merge(newScope, individualModel);
+                            newScope = angular.merge(customScope, individualModel);
 
                             var linkFn = $compile(stringTab);
                             var compiledContent = linkFn(newScope);
@@ -147,10 +148,10 @@
                 },
                 transclude: true,
                 link: function (scope, el, attrs, ctrl, transcludeFn) {
-                    // transcluded content's scope should inherit from parent
+
                     transcludeFn(scope.$parent, function (clonedTranscludedContent) {
                         $timeout(function () {
-                            debugger;
+
                             var tabNames = $rootScope[scope.ref].tabNames;
                             var activeTab = $rootScope[scope.ref].Active;
                             
