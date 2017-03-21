@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf-8" />
+    <script src="https://code.jquery.com/jquery-2.2.4.js"></script>
+    <script src="angular.js"></script>
+    <script src="Moment.js"></script>
+  
+    <compile-tab model="testmodel1" title="tab2">
+
+
+
+    </compile-tab>
+</head>
+<body>
+    <div ng-app="plunker">
+
+        <div ng-controller="mainCtrl">
+            
+            <tabs-nav ref="myTabsComponent"></tabs-nav>
+
+            <tabs-component id="myTabsComponent">
+
+                <tabs>
+
+                    <repeat-tab array="array" tabNameProp="navTitle" >
+            
+                        {{ testmodelprop }} {{ tabName }}
+
+                    </repeat-tab>
+
+                    <!--<compile-tab model="testmodel1" tabNameProp="navTitle"> {{ testmodelprop }}  </compile-tab>-->
+
+                </tabs>
+
+            </tabs-component>
+
+        </div>
+    </div>
+</body>
+
+
+<script type="text/javascript">
+
+        var app = angular.module('plunker', []);
+
+        app.controller("mainCtrl", function ($scope) {
+
+            $scope.testmodel1 = { testmodelprop: "testmodel1prop", navTitle: "nav1" };
+            $scope.testmodel1 = { testmodelprop: "testmodel2prop", navTitle: "nav2" };
+
+            $scope.array = [{ testmodelprop: "testmodel1prop", navTitle: "nav1" }, { testmodelprop: "testmodel2prop", navTitle: "nav2" }];
+        });
+
+        app.directive('tabsComponent', function ($compile, $rootScope) {
+            return {
+                restrict: 'E',
+                scope: {
+                    id: "@"
+                },
+                transclude: true,
+                link: function (scope, el, attrs, ctrl, transcludeFn) {
+                    // transcluded content's scope should inherit from parent
+                    transcludeFn(scope.$parent, function (clonedTranscludedContent) {
+    
+                        $rootScope[scope.id] = {};
+                        $rootScope[scope.id].tabNames = [];
+                        
+                        console.log("tabs component");
+
+                        var tabs = [];
+
+                        $innerContent = $(clonedTranscludedContent[1]);
+
+                        var repeatTabs = $innerContent.children("repeat-tab");                        
+
+                        for (var r = 0; r < repeatTabs.length; r++) {
+
+                            $(repeatTabs[r]).addClass("tab");
+                            // tabName will be later populated.We need to wrap inner because repeat does not get compiled, as it should, as it is a container.
+                            $(repeatTabs[r]).wrapInner('<div ng-show="$root.' + scope.id + '.Active == tabName" />');
+                     
+                            var arrayModel = scope.$parent[$(repeatTabs[r]).attr('array')];
+
+                            for (var i = 0; i < arrayModel.length; i++) {
+                   
+                                var newScope = scope.$new();
+                              
+                                var tabName = arrayModel[i][$(repeatTabs[r]).attr('tabNameProp')];
+
+                                newScope.tabName = tabName;
+                                
+                                $rootScope[scope.id].tabNames.push(tabName);
+
+                                var jqueryTab = $(repeatTabs[r]);
+                                var stringTab = jqueryTab.prop('outerHTML');
+
+                                newScope = angular.merge(newScope, arrayModel[i]);
+
+                                var linkFn = $compile(stringTab);
+                                var compiledContent = linkFn(newScope);
+                                el.append(compiledContent);
+                            }
+                        }
+                        
+                        var compileTabs = $innerContent.children("compile-tab");
+
+                        for (var j = 0; j < compileTabs.length; j++) {
+
+                            var tabName = $(compileTabs[j]).attr('model');
+
+                            $rootScope[scope.id].tabNames.push(tabName);
+
+                            var newScope = scope.$new();
+            
+                            var individualModel = scope.$parent[$(compileTabs[j]).attr('model')];
+
+                            var jqueryTab = $(compileTabs[j]);
+                            var stringTab = jqueryTab.prop('outerHTML');
+
+                            newScope = angular.merge(newScope, individualModel);
+
+                            var linkFn = $compile(stringTab);
+                            var compiledContent = linkFn(newScope);
+
+                            el.append(compiledContent);
+
+                        }
+
+                        console.log($rootScope[scope.id].tabNames);
+
+                        if ($rootScope[scope.id].tabNames.length != 0) {
+                            $rootScope[scope.id].Active = $rootScope[scope.id].tabNames[0];
+                        }
+                     
+                    });
+                }
+            };
+        });
+
+        app.directive('tabsNav', function ($compile, $rootScope, $timeout) {
+            return {
+                restrict: 'E',
+                scope: {                   
+                    ref: "@ref"
+                },
+                transclude: true,
+                link: function (scope, el, attrs, ctrl, transcludeFn) {
+                    // transcluded content's scope should inherit from parent
+                    transcludeFn(scope.$parent, function (clonedTranscludedContent) {
+                        $timeout(function () {
+                            debugger;
+                            var tabNames = $rootScope[scope.ref].tabNames;
+                            var activeTab = $rootScope[scope.ref].Active;
+                            
+                            $rootUl = $("<ul />").addClass("nav").addClass("nav-pills").addClass("nav-stacked");
+
+                            for (var i = 0; i < tabNames.length; i++) {
+                                $rootUl.append("<li ng-click=\"goToTab('" + tabNames[i] + "')\"><a href=\"#\">" + tabNames[i] + "</a></li>");
+                            }
+
+                            scope.goToTab = function (tabNameToActive) {
+                                $rootScope[scope.ref].Active = tabNameToActive;
+                            }
+
+                            var linkFn = $compile($rootUl.prop('outerHTML'));
+                            var compiledContent = linkFn(scope);
+
+                            el.append(compiledContent);
+                        });
+                    });
+                }
+            };
+        });
+
+
+        app.directive('test', function () {
+            return {
+                restrict: 'E',
+                scope: {},
+                link: function ($scope, $element, attr) {
+                    $scope.var1 = "test";
+                },
+                template: '<p>{{ var1 }}</p>'
+            };
+        });
+
+</script>
+</html>
